@@ -6,6 +6,14 @@ using Newtonsoft.Json;
 using RulesEngine.Models;
 using RulesEngine;
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using RulesEngine.Models;
+using RulesEngine;
+
 public class CumacService
 {
     private readonly RulesEngine.RulesEngine _rulesEngine;
@@ -14,14 +22,14 @@ public class CumacService
     {
         try
         {
-            string filePath = "C:\\Users\\perfectshore\\source\\repos\\RuleEngineExample\\RuleEngineExample\\rules.json";
+            var jsonPath = "C:\\Users\\perfectshore\\source\\repos\\RuleEngineExample\\RuleEngineExample\\rules.json";
 
-            if (!File.Exists(filePath))
+            if (!File.Exists(jsonPath))
             {
-                throw new FileNotFoundException("Le fichier rules.json est introuvable.", filePath);
+                throw new FileNotFoundException("Le fichier rules.json est introuvable.");
             }
 
-            var json = File.ReadAllText(filePath);
+            var json = File.ReadAllText(jsonPath);
             var workflows = JsonConvert.DeserializeObject<Workflow[]>(json);
 
             if (workflows == null || workflows.Length == 0)
@@ -39,61 +47,52 @@ public class CumacService
     }
 
     public async Task<CumacResult> CalculerCumacAsync(OperationTravaux operation)
-{
-    if (operation == null)
     {
-        throw new ArgumentNullException(nameof(operation), "L'opération ne peut pas être nulle.");
-    }
-
-    var inputs = new List<RuleParameter> { new RuleParameter("input1", operation) };
-
-    var cumacResults = await _rulesEngine.ExecuteAllRulesAsync("CUMAC-Calculation", inputs.ToArray());
-
-    var result = new CumacResult
-    {
-        ReferenceValue = operation.ReferenceValue,
-        CumacStandard = 0M,
-        CumacCoupDePouce = 0M,
-        CumacZNI = 0M
-    };
-
-    Console.WriteLine($"\n?? Processing: {JsonConvert.SerializeObject(operation, Formatting.Indented)}");
-
-    foreach (var ruleResult in cumacResults)
-    {
-        if (ruleResult.IsSuccess && ruleResult.ActionResult?.Output != null)
+        if (operation == null)
         {
-            if (decimal.TryParse(ruleResult.ActionResult.Output.ToString(), out decimal value))
+            throw new ArgumentNullException(nameof(operation), "L'opération ne peut pas être nulle.");
+        }
+
+        var inputs = new List<RuleParameter> { new RuleParameter("input1", operation) };
+        var cumacResults = await _rulesEngine.ExecuteAllRulesAsync("CUMAC-Calculation", inputs.ToArray());
+
+        var result = new CumacResult
+        {
+            ReferenceValue = operation.ReferenceValue,
+            CumacStandard = 0M,
+            CumacCoupDePouce = 0M,
+            CumacZNI = 0M
+        };
+
+        foreach (var ruleResult in cumacResults)
+        {
+            Console.WriteLine($"🔍 Vérification de la règle : {ruleResult.Rule.RuleName}");
+
+            if (ruleResult.IsSuccess && ruleResult.ActionResult?.Output != null && decimal.TryParse(ruleResult.ActionResult.Output.ToString(), out decimal value))
             {
+                Console.WriteLine($"✅ Règle appliquée : {ruleResult.Rule.RuleName} - Valeur : {value} kWhc");
+
                 if (ruleResult.Rule.RuleName == "BaseCumacCalculation")
                 {
                     result.CumacStandard = value;
                 }
-                else if (ruleResult.Rule.RuleName == "ApplyCoupDePouce")
+                else if (ruleResult.Rule.RuleName == "CoupDePouce")
                 {
                     result.CumacCoupDePouce = value;
                 }
-                else if (ruleResult.Rule.RuleName == "ZNIPrecary" || ruleResult.Rule.RuleName == "ZNIStandard")
+                else if (ruleResult.Rule.RuleName == "ZNIBonus")
                 {
                     result.CumacZNI = value;
                 }
-
-                Console.WriteLine($"✅ Rule {ruleResult.Rule.RuleName} PASSED. Value: {value} kWhc");
             }
             else
             {
-                Console.WriteLine($"⚠️ Impossible de convertir le résultat de {ruleResult.Rule.RuleName} en decimal.");
+                Console.WriteLine($"❌ Règle {ruleResult.Rule.RuleName} ÉCHEC. Raison : {ruleResult.Rule.ErrorMessage}");
             }
         }
-        else
-        {
-            Console.WriteLine($"❌ Rule {ruleResult.Rule.RuleName} FAILED. Reason: {ruleResult.Rule.ErrorMessage}");
-        }
+
+        return result;
     }
-
-    return result;
-}
-
 }
 
 public class Program
@@ -118,7 +117,7 @@ public class Program
             results.Add(cumacResult);
         }
 
-        Console.WriteLine("\n📊 Résultats du CUMAC pour chaque opération :\n");
+        Console.WriteLine("\n-------------------📊 Résultats du CUMAC pour chaque opération :-------------------\n");
 
         foreach (var result in results)
         {
@@ -130,6 +129,7 @@ public class Program
         }
     }
 }
+
 
 public class OperationTravaux
 {

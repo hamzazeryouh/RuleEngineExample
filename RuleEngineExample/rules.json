@@ -6,8 +6,7 @@
         "RuleName": "BaseCumacCalculation",
         "ErrorMessage": "Erreur de calcul du CUMAC",
         "Enabled": true,
-        "Expression": "input1.ReferenceValue * input1.CoefficientZone * input1.CoefficientOperation",
-        "SuccessEvent": "true",
+        "Expression": "true",
         "Actions": {
           "OnSuccess": {
             "Name": "OutputExpression",
@@ -22,59 +21,28 @@
         "ErrorMessage": "Le Coup de Pouce ne peut pas être appliqué",
         "Enabled": true,
         "Expression": "input1.IsCoupDePouce == true",
-        "Rules": [
-          {
-            "RuleName": "ApplyCoupDePouce",
-            "Expression": "(input1.ReferenceValue * input1.CoefficientZone * input1.CoefficientOperation) * 1.5",
-            "Enabled": true,
-            "Actions": {
-              "OnSuccess": {
-                "Name": "OutputExpression",
-                "Context": {
-                  "Expression": "(input1.ReferenceValue * input1.CoefficientZone * input1.CoefficientOperation) * 1.5"
-                }
-              }
+        "Actions": {
+          "OnSuccess": {
+            "Name": "OutputExpression",
+            "Context": {
+              "Expression": "(input1.ReferenceValue * input1.CoefficientZone * input1.CoefficientOperation) * 1.5"
             }
           }
-        ],
-        "Operator": "OrElse",
-        "SuccessEvent": "true"
+        }
       },
       {
         "RuleName": "ZNIBonus",
         "ErrorMessage": "Le bonus ZNI ne peut pas être appliqué",
         "Enabled": true,
         "Expression": "input1.IsZNI == true",
-        "Rules": [
-          {
-            "RuleName": "ZNIPrecary",
-            "Expression": "(input1.ReferenceValue * input1.CoefficientZone * input1.CoefficientOperation) * 3",
-            "Enabled": true,
-            "Actions": {
-              "OnSuccess": {
-                "Name": "OutputExpression",
-                "Context": {
-                  "Expression": "(input1.ReferenceValue * input1.CoefficientZone * input1.CoefficientOperation) * 3"
-                }
-              }
-            }
-          },
-          {
-            "RuleName": "ZNIStandard",
-            "Expression": "(input1.ReferenceValue * input1.CoefficientZone * input1.CoefficientOperation) * 2",
-            "Enabled": true,
-            "Actions": {
-              "OnSuccess": {
-                "Name": "OutputExpression",
-                "Context": {
-                  "Expression": "(input1.ReferenceValue * input1.CoefficientZone * input1.CoefficientOperation) * 2"
-                }
-              }
+        "Actions": {
+          "OnSuccess": {
+            "Name": "OutputExpression",
+            "Context": {
+              "Expression": "input1.IsZNI ? ((input1.ReferenceValue * input1.CoefficientZone * input1.CoefficientOperation) * (input1.IsCoupDePouce ? 3 : 2)) : 0"
             }
           }
-        ],
-        "Operator": "OrElse",
-        "SuccessEvent": "true"
+        }
       }
     ]
   }
