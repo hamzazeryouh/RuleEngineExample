@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "RuleEngineExample": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
